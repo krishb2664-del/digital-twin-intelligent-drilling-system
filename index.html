@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRILLING SIMULATION PROFILE — Digital Twin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="profile-container">
+
+    <!-- ══════════════════════ 1. HEADER ══════════════════════════ -->
+    <header id="top-header">
+        <div class="header-left">
+            <div class="header-title-group">
+                <h1 class="main-title">DRILLING SIMULATION PROFILE</h1>
+                <div class="sub-title-row">
+                    <span class="sub-title">Pressure vs Depth and Drilling Parameters</span>
+                    <span class="pill-badge">LIVE DRILLING DIGITAL TWIN</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="depth-box">
+                <span class="depth-tag">CURRENT DEPTH</span>
+                <div class="depth-digits-row">
+                    <span class="depth-number" id="currentDepth">1200</span>
+                    <span class="depth-unit">ft</span>
+                </div>
+            </div>
+            <div class="status-indicator st-stable" id="statusIndicator">
+                <span id="statusIcon">✓</span>
+                <span id="statusText">STABLE</span>
+            </div>
+            <div id="siren-panel" class="siren-box">
+                <span id="sirenIcon">🔇</span>
+                <span id="sirenText">SIREN OFF</span>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <!-- Controls -->
+            <div class="controls-toolbar">
+                <div class="btn-group">
+                    <button class="btn btn-green" id="btnStart">▶ START</button>
+                    <button class="btn btn-yellow" id="btnPause">⏸ PAUSE</button>
+                    <button class="btn btn-gray" id="btnReset">↻ RESET</button>
+                </div>
+                <button class="btn btn-sound" id="btnMute">🔊 SOUND ON</button>
+                <div class="speed-control">
+                    <span class="speed-lbl">SPEED:</span>
+                    <button class="speed-btn active" data-speed="1">1×</button>
+                    <button class="speed-btn" data-speed="2">2×</button>
+                    <button class="speed-btn" data-speed="5">5×</button>
+                    <button class="speed-btn" data-speed="10">10×</button>
+                </div>
+                <div class="time-clock" id="clock">00:00:00</div>
+                <div class="sim-badge badge-standby" id="simBadge">● STANDBY</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ══════════════════ 1.5 OPERATION STATUS & REQUIRED ACTION CONSOLE ══════════════════ -->
+    <section id="operation-control-console">
+        <!-- Top: Large Status / Alert Headline Banner -->
+        <div class="op-status-banner st-wc-normal" id="opStatusBanner">
+            <div class="op-status-left">
+                <span class="op-status-icon" id="opStatusIcon">⚡</span>
+                <div class="op-status-texts">
+                    <span class="op-status-title" id="opStatusTitle">STAGE 1 — NORMAL DRILLING</span>
+                    <span class="op-status-subtitle" id="opStatusSubtitle">All parameters are within normal safe boundaries. No kick indication.</span>
+                </div>
+            </div>
+            <div class="op-status-badges">
+                <div class="wc-badge badge-active" id="badge-drilling">
+                    <span class="wc-dot">●</span>
+                    <span class="wc-lbl">DRILLING:</span>
+                    <span class="wc-state" id="val-drill-state">ON</span>
+                </div>
+                <div class="wc-badge badge-active" id="badge-pump">
+                    <span class="wc-dot">●</span>
+                    <span class="wc-lbl">MUD PUMP:</span>
+                    <span class="wc-state" id="val-pump-state">ON</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle: Large Live Gauges for Pressures & KMW -->
+        <div class="op-gauges-row">
+            <div class="op-gauge-card" id="card-sidpp">
+                <span class="op-card-lbl">SIDPP (SHUT-IN DP)</span>
+                <div class="op-card-val-row">
+                    <span class="op-card-val" id="val-sidpp">--</span>
+                    <span class="op-card-unit">psi</span>
+                </div>
+            </div>
+            <div class="op-gauge-card" id="card-sicp">
+                <span class="op-card-lbl">SICP (SHUT-IN CASING)</span>
+                <div class="op-card-val-row">
+                    <span class="op-card-val" id="val-sicp">--</span>
+                    <span class="op-card-unit">psi</span>
+                </div>
+            </div>
+            <div class="op-gauge-card card-kmw" id="card-kmw">
+                <span class="op-card-lbl">KILL MUD WEIGHT (KMW)</span>
+                <div class="op-card-val-row">
+                    <span class="op-card-val" id="val-kmw">--</span>
+                    <span class="op-card-unit">ppg</span>
+                </div>
+                <span class="op-card-sub" id="kmw-formula-hint">KMW = MW + SIDPP / (0.052 × TVD)</span>
+            </div>
+        </div>
+
+        <!-- Bottom: Prominent Interactive Required Action Buttons -->
+        <div class="op-actions-strip">
+            <div class="op-req-box">
+                <span class="op-req-tag">REQUIRED ACTION:</span>
+                <span class="op-req-text" id="opReqText">Normal Drilling — No Action Required</span>
+            </div>
+            <div class="op-btn-cluster">
+                <button class="action-btn btn-stop-drill" id="btnStopDrilling" disabled>🔴 TURN OFF DRILLING</button>
+                <button class="action-btn btn-stop-pump" id="btnStopPump" disabled>🟠 TURN OFF PUMP</button>
+                <button class="action-btn btn-shut-in" id="btnShutIn" disabled>🚨 SHUT IN WELL</button>
+                <button class="action-btn btn-calc-kmw" id="btnCalcKmw" disabled>🧮 CALCULATE KILL MUD WEIGHT</button>
+                <button class="action-btn btn-apply-kmw" id="btnApplyKmw" disabled>🔵 APPLY KILL MUD WEIGHT</button>
+                <button class="action-btn btn-resume-drill" id="btnResumeDrilling" disabled>🟢 TURN ON DRILLING</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════ 2. LIVE PARAMETERS BAR ══════════════════ -->
+    <section id="parameter-ribbon">
+        <div class="ribbon-item ribbon-condition">
+            <span class="rib-label">FORMATION / CONDITION</span>
+            <span class="rib-val" id="statusEvent" style="color:#00d4ff;font-size:11px;">Formation 1 (1200–1310 ft) Normal</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">BHP / HYDROSTATIC</span>
+            <span class="rib-val" id="val-pressure">1154</span>
+            <span class="rib-unit">psi</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">ACTUAL MW</span>
+            <span class="rib-val" id="val-mw">18.50</span>
+            <span class="rib-unit">ppg</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">REC. MW</span>
+            <span class="rib-val" id="val-recmw">18.50</span>
+            <span class="rib-unit">ppg</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">FLOW IN</span>
+            <span class="rib-val" id="val-flowin" style="color:#00d4ff;">490</span>
+            <span class="rib-unit">gpm</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">FLOW OUT</span>
+            <span class="rib-val" id="val-flowout" style="color:#ff6b4a;">490</span>
+            <span class="rib-unit">gpm</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">PIT GAIN / LOSS</span>
+            <span class="rib-val" id="val-pit" style="color:#10b981;">+0.0</span>
+            <span class="rib-unit">bbl</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">ROP</span>
+            <span class="rib-val" id="val-rop" style="color:#c084fc;">0.0135</span>
+            <span class="rib-unit">ft/s</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">TORQUE</span>
+            <span class="rib-val" id="val-torque" style="color:#fbbf24;">10.2</span>
+            <span class="rib-unit">kN·m</span>
+        </div>
+        <div class="ribbon-item">
+            <span class="rib-label">RPM</span>
+            <span class="rib-val" id="val-rpm">122</span>
+            <span class="rib-unit">rpm</span>
+        </div>
+    </section>
+
+    <!-- ══════════════════ 3. STACKED CHARTS PROFILE ════════════════ -->
+    <main id="charts-stack">
+
+        <!-- 1. Main Dominant Pressure vs Depth Graph (Occupies 75-80% of visualization) -->
+        <div class="chart-panel panel-pressure">
+            <div class="chart-header-row">
+                <span class="chart-tag">1. REAL-TIME DRILLING PRESSURE MONITORING (DOMINANT PROFILE)</span>
+                <div class="chart-legend-row">
+                    <span class="leg-item"><span class="leg-line leg-form"></span> Formation Pressure</span>
+                    <span class="leg-item"><span class="leg-line leg-frac"></span> Fracture Pressure</span>
+                    <span class="leg-item"><span class="leg-line leg-bhp"></span> Hydrostatic / BHP</span>
+                    <span class="leg-item"><span class="leg-box leg-safe"></span> Safe Drilling Window</span>
+                </div>
+            </div>
+            <div class="canvas-wrapper wrap-pressure">
+                <canvas id="pressureChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 2. Compact Supporting Monitoring Charts Row -->
+        <div class="supporting-charts-grid">
+            <!-- Card 1: Flow Rate Monitoring -->
+            <div class="chart-panel panel-card">
+                <div class="chart-header-row">
+                    <span class="chart-tag">FLOW RATE</span>
+                    <span class="chart-legend-hint">In (cyan) / Out (org) [gpm]</span>
+                </div>
+                <div class="canvas-wrapper wrap-card">
+                    <canvas id="flowChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Card 2: Mud Weight Monitoring -->
+            <div class="chart-panel panel-card">
+                <div class="chart-header-row">
+                    <span class="chart-tag">MUD WEIGHT</span>
+                    <span class="chart-legend-hint">Actual (cyan) / Rec (gold) [ppg]</span>
+                </div>
+                <div class="canvas-wrapper wrap-card">
+                    <canvas id="mwChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Card 3: ROP & Torque Monitoring -->
+            <div class="chart-panel panel-card">
+                <div class="chart-header-row">
+                    <span class="chart-tag">ROP &amp; TORQUE</span>
+                    <span class="chart-legend-hint">ROP (purple) / Torque (gold)</span>
+                </div>
+                <div class="canvas-wrapper wrap-card">
+                    <canvas id="ropChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Card 4: Pit Volume / Gain-Loss Monitoring -->
+            <div class="chart-panel panel-card">
+                <div class="chart-header-row">
+                    <span class="chart-tag">PIT GAIN / LOSS</span>
+                    <span class="chart-legend-hint">Gain (+) / Loss (-) [bbl]</span>
+                </div>
+                <div class="canvas-wrapper wrap-card">
+                    <canvas id="pitChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ══════════════ 4. DEPTH-WISE EVENT / CONDITION TABLE ═════════ -->
+    <footer id="table-section">
+        <div class="table-title-bar">
+            <span>■ DEPTH-WISE SIMULATION EVENT &amp; CONDITION TABLE</span>
+            <span class="table-sub-hint">Active scenario column highlights dynamically with drill bit progression</span>
+        </div>
+        <div class="table-container">
+            <table id="eventTable">
+                <thead id="eventTableHead"></thead>
+                <tbody id="eventTableBody"></tbody>
+            </table>
+        </div>
+    </footer>
+
+</div>
+
+<!-- Scripts loaded in dependency order -->
+<script src="js/simulation.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
